@@ -72,7 +72,8 @@ def explain_http_error(response, action):
     hints = {
         401: "Your token was rejected. Check that you copied it completely, or create a new one at "
              "https://osf.io/settings/tokens",
-        403: "OSF refused the change. Usual causes: (1) the token does not have the 'osf.full_write' "
+        403: "OSF refused the change. If earlier files uploaded fine, OSF is probably throttling you: "
+             "wait 10-15 minutes and run the same command again (finished files are skipped). Otherwise, usual causes: (1) the token does not have the 'osf.full_write' "
              "scope; (2) your account has only read access to this project; (3) the ID belongs to a "
              "registration, which is frozen and cannot be changed.",
         404: "Not found. Check the project ID (the five characters after osf.io/ in the URL).",
@@ -106,8 +107,16 @@ class OSFSession:
             else:
                 if response.status_code in ok or response.status_code in allow:
                     return response
-                if response.status_code not in (429, 500, 502, 503, 504) or attempt == self.retries:
+                # 403 in the middle of a long upload is usually OSF throttling, not a real permission
+                # problem: wait and retry it once (real permission errors fail again and are reported).
+                transient = response.status_code in (429, 500, 502, 503, 504) or (
+                    response.status_code == 403 and method == "PUT" and attempt == 0)
+                if not transient or attempt == self.retries:
                     raise explain_http_error(response, action)
+                if response.status_code == 403:
+                    print("    OSF refused the request; waiting 60 s and trying again...")
+                    time.sleep(60)
+                    continue
             time.sleep(2 ** attempt * 2)  # 2, 4, 8, 16 s
 
 

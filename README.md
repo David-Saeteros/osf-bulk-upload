@@ -107,7 +107,8 @@ Summary: 1 uploaded, 1 updated, 1 unchanged
 | message | what to do |
 |---|---|
 | `HTTP 401` | The token is wrong or incomplete. Create a new one and copy it whole. |
-| `HTTP 403` | The token lacks `osf.full_write`, or your account can only read the project. Create a token with the right scope, or ask an administrator for "Read + Write" access. |
+| `HTTP 403` after some files uploaded fine | OSF is throttling a long upload. Wait 10-15 minutes and run the same command again; finished files are skipped. |
+| `HTTP 403` at the start | The token lacks `osf.full_write`, or your account can only read the project. Create a token with the right scope, or ask an administrator for "Read + Write" access. |
 | `... is a registration` | Registrations are frozen. Upload to the project the registration was made from. |
 | `No project with ID ...` | Check the ID, and that you are signed in with an account that is a contributor. |
 | `HTTP 429` or the network drops | Run the same command again. Files already uploaded are skipped. |
